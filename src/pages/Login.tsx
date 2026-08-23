@@ -4,22 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from '@/providers/trpc'
 
-function getOAuthUrl() {
-  const kimiAuthUrl = import.meta.env.VITE_KIMI_AUTH_URL;
-  const appID = import.meta.env.VITE_APP_ID;
-  const redirectUri = `${window.location.origin}/api/oauth/callback`;
-  const state = btoa(redirectUri);
-
-  const url = new URL(`${kimiAuthUrl}/api/oauth/authorize`);
-  url.searchParams.set("client_id", appID);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "profile");
-  url.searchParams.set("state", state);
-
-  return url.toString();
-}
-
 export default function Login() {
   const navigate = useNavigate()
   const utils = trpc.useUtils()
@@ -76,24 +60,6 @@ export default function Login() {
               {adminLogin.isPending ? 'Entrando…' : 'Entrar'}
             </Button>
           </form>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 14px' }}>
-            <span style={{ flex: 1, height: 1, backgroundColor: 'rgba(201,169,97,0.3)' }} />
-            <span style={{ color: 'rgba(201,180,138,0.7)', fontSize: 11, fontFamily: "'Cinzel', serif", letterSpacing: '0.2em' }}>OU</span>
-            <span style={{ flex: 1, height: 1, backgroundColor: 'rgba(201,169,97,0.3)' }} />
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full"
-            size="lg"
-            onClick={() => {
-              window.location.href = getOAuthUrl();
-            }}
-            style={{ borderColor: 'rgba(201,169,97,0.4)', color: '#c9a961', fontFamily: "'Cinzel', serif", letterSpacing: '0.1em', fontSize: 12 }}
-          >
-            Sign in with Kimi
-          </Button>
         </CardContent>
       </Card>
     </div>
