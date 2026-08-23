@@ -2,6 +2,7 @@ import {
   pgTable,
   pgEnum,
   serial,
+  bigserial,
   integer,
   varchar,
   text,
@@ -62,6 +63,21 @@ export type SiteContent = typeof siteContent.$inferSelect;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+/**
+ * Administrators created from the admin panel. The env-based admin
+ * (ADMIN_USER/ADMIN_PASS) is deliberately not stored here — it is the owner
+ * and must stay un-deletable.
+ */
+export const adminUsers = pgTable("admin_users", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  username: varchar("username", { length: 64 }).notNull().unique(),
+  passwordHash: text("passwordHash").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type InsertAdminUser = typeof adminUsers.$inferInsert;
 
 // TODO: Add your tables here.
 //

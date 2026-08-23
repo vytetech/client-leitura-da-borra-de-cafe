@@ -6,9 +6,12 @@ import { env } from "../lib/env";
 import { getSessionCookieOptions } from "../lib/cookies";
 import { Session } from "@contracts/constants";
 import { Errors } from "@contracts/errors";
+import { eq } from "drizzle-orm";
 import { signSessionToken, verifySessionToken } from "./session";
 import { users as kimiUsers } from "./platform";
 import { findUserByUnionId, upsertUser } from "../queries/users";
+import { getDb } from "../queries/connection";
+import { adminUsers } from "@db/schema";
 import type { TokenResponse } from "./types";
 
 async function exchangeAuthCode(
@@ -67,6 +70,25 @@ async function verifyAccessToken(
 
 export const LOCAL_ADMIN_UNION_ID = "local-admin-dandan";
 
+/** Session identity for an admin stored in the admin_users table. */
+const DB_ADMIN_PREFIX = "db-admin:";
+export const dbAdminUnionId = (id: number) => `${DB_ADMIN_PREFIX}${id}`;
+
+/** A user-shaped object for admins that have no row in the `users` table. */
+function synthesizedAdmin(unionId: string, name: string) {
+  return {
+    id: 0,
+    unionId,
+    name,
+    email: null,
+    avatar: null,
+    role: "admin" as const,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignInAt: new Date(),
+  };
+}
+
 export async function authenticateRequest(headers: Headers) {
   const cookies = cookie.parse(headers.get("cookie") || "");
   const token = cookies[Session.cookieName];
@@ -80,17 +102,21 @@ export async function authenticateRequest(headers: Headers) {
   }
   // local admin session (username/password login) — no DB record needed
   if (claim.unionId === LOCAL_ADMIN_UNION_ID) {
-    return {
-      id: 0,
-      unionId: LOCAL_ADMIN_UNION_ID,
-      name: env.adminUser,
-      email: null,
-      avatar: null,
-      role: "admin" as const,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastSignInAt: new Date(),
-    };
+    return synthesizedAdmin(LOCAL_ADMIN_UNION_ID, env.adminUser);
+  }
+  // admin created in the panel — lives in admin_users, not in the users table
+  if (claim.unionId.startsWith(DB_ADMIN_PREFIX)) {
+    const id = Number(claim.unionId.slice(DB_ADMIN_PREFIX.length));
+    const [row] = await getDb()
+      .select({ id: adminUsers.id, username: adminUsers.username })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, id))
+      .limit(1);
+    // Deleting an admin must invalidate their session immediately.
+    if (!row) {
+      throw Errors.forbidden("User not found. Please re-login.");
+    }
+    return synthesizedAdmin(claim.unionId, row.username);
   }
   const user = await findUserByUnionId(claim.unionId);
   if (!user) {

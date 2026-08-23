@@ -123,14 +123,19 @@ export default function Admin() {
   const remove = trpc.content.remove.useMutation()
   const uploadMut = trpc.upload.upload.useMutation()
   const deleteFile = trpc.upload.deleteFile.useMutation()
+  const adminUsersQuery = trpc.adminUsers.list.useQuery(undefined, { enabled: isAdmin })
+  const createAdmin = trpc.adminUsers.create.useMutation()
+  const removeAdmin = trpc.adminUsers.remove.useMutation()
 
-  const [tab, setTab] = useState<'textos' | 'precos' | 'imagens' | 'estilo' | 'secoes'>('textos')
+  const [tab, setTab] = useState<'textos' | 'precos' | 'imagens' | 'estilo' | 'secoes' | 'usuarios'>('textos')
   const [lang, setLang] = useState<Lang>('pt')
   const [search, setSearch] = useState('')
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState<string | null>(null)
   const [uploading, setUploading] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null)
+  const [newAdminUser, setNewAdminUser] = useState('')
+  const [newAdminPass, setNewAdminPass] = useState('')
 
   const overrides = useMemo(() => contentQuery.data ?? {}, [contentQuery.data])
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -307,6 +312,31 @@ export default function Admin() {
     }
   }
 
+  /* ---- admin users ---- */
+  const submitNewAdmin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await createAdmin.mutateAsync({ username: newAdminUser.trim(), password: newAdminPass })
+      await utils.adminUsers.list.invalidate()
+      setNewAdminUser('')
+      setNewAdminPass('')
+      flash('Administrador criado ✓')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Erro ao criar administrador.', false)
+    }
+  }
+
+  const deleteAdmin = async (id: number, username: string) => {
+    if (!window.confirm(`Remover o administrador "${username}"? Ele perde o acesso imediatamente.`)) return
+    try {
+      await removeAdmin.mutateAsync({ id })
+      await utils.adminUsers.list.invalidate()
+      flash('Administrador removido ✓')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Erro ao remover administrador.', false)
+    }
+  }
+
   const styleDirty = [...COLOR_FIELDS.map((f) => f.key), 'style.font.family', 'style.font.base', 'style.font.h1']
     .some((k) => drafts[k] !== undefined)
 
@@ -351,7 +381,7 @@ export default function Admin() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, margin: '34px 0 26px', flexWrap: 'wrap' }}>
-        {([['textos', '✏️ Textos'], ['precos', '💰 Preços das leituras'], ['imagens', '🖼️ Fotos e vídeos'], ['estilo', '🎨 Estilo'], ['secoes', '🧩 Seções']] as const).map(([id, label]) => (
+        {([['textos', '✏️ Textos'], ['precos', '💰 Preços das leituras'], ['imagens', '🖼️ Fotos e vídeos'], ['estilo', '🎨 Estilo'], ['secoes', '🧩 Seções'], ['usuarios', '👤 Usuários']] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -705,6 +735,74 @@ export default function Admin() {
                 </div>
               )
             })}
+          </div>
+        </>
+      )}
+
+      {tab === 'usuarios' && (
+        <>
+          <p style={{ color: theme.beige, fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontSize: 14, margin: '0 0 26px' }}>
+            Crie contas de administrador com acesso total a este painel. O administrador principal
+            do sistema não aparece nesta lista e não pode ser removido daqui.
+          </p>
+
+          <form onSubmit={submitNewAdmin} style={{ border: `1px solid rgba(201,169,97,0.22)`, backgroundColor: 'rgba(22,16,9,0.6)', padding: '22px 24px', marginBottom: 30 }}>
+            <p style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.gold, margin: '0 0 18px' }}>
+              Novo administrador
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <input
+                value={newAdminUser}
+                onChange={(e) => setNewAdminUser(e.target.value)}
+                placeholder="Usuário"
+                autoComplete="off"
+                style={{ ...inputStyle, flex: '1 1 200px', width: 'auto' }}
+              />
+              <input
+                type="password"
+                value={newAdminPass}
+                onChange={(e) => setNewAdminPass(e.target.value)}
+                placeholder="Senha (mín. 8 caracteres)"
+                autoComplete="new-password"
+                style={{ ...inputStyle, flex: '1 1 200px', width: 'auto' }}
+              />
+              <button type="submit" disabled={createAdmin.isPending} style={{ ...saveBtn, opacity: createAdmin.isPending ? 0.6 : 1 }}>
+                {createAdmin.isPending ? 'Criando…' : 'Criar administrador'}
+              </button>
+            </div>
+            <p style={{ color: 'rgba(201,180,138,0.6)', fontFamily: "'Playfair Display', serif", fontSize: 12.5, margin: '14px 0 0' }}>
+              O usuário precisa ter entre 3 e 64 caracteres. A senha é guardada com hash e nunca fica visível.
+            </p>
+          </form>
+
+          {adminUsersQuery.isLoading && (
+            <p style={{ color: theme.beige, fontFamily: "'Playfair Display', serif" }}>Carregando…</p>
+          )}
+          {adminUsersQuery.data && adminUsersQuery.data.length === 0 && (
+            <p style={{ color: 'rgba(201,180,138,0.6)', fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>
+              Nenhum administrador adicional cadastrado.
+            </p>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {adminUsersQuery.data?.map((a) => (
+              <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, border: `1px solid rgba(201,169,97,0.22)`, backgroundColor: 'rgba(22,16,9,0.6)', padding: '14px 20px', flexWrap: 'wrap' }}>
+                <div>
+                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: theme.cream, letterSpacing: '0.08em' }}>
+                    {a.username}
+                  </span>
+                  <span style={{ display: 'block', fontFamily: "'Playfair Display', serif", fontSize: 12, color: 'rgba(201,180,138,0.55)', marginTop: 4 }}>
+                    criado em {new Date(a.createdAt).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                <button
+                  onClick={() => deleteAdmin(a.id, a.username)}
+                  disabled={removeAdmin.isPending}
+                  style={{ ...ghostBtn, color: '#e08a8a', borderColor: 'rgba(224,138,138,0.45)', minWidth: 120 }}
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
           </div>
         </>
       )}
