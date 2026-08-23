@@ -126,6 +126,7 @@ export default function Admin() {
   const adminUsersQuery = trpc.adminUsers.list.useQuery(undefined, { enabled: isAdmin })
   const createAdmin = trpc.adminUsers.create.useMutation()
   const removeAdmin = trpc.adminUsers.remove.useMutation()
+  const updateAdmin = trpc.adminUsers.update.useMutation()
 
   const [tab, setTab] = useState<'textos' | 'precos' | 'imagens' | 'estilo' | 'secoes' | 'usuarios'>('textos')
   const [lang, setLang] = useState<Lang>('pt')
@@ -136,6 +137,9 @@ export default function Admin() {
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null)
   const [newAdminUser, setNewAdminUser] = useState('')
   const [newAdminPass, setNewAdminPass] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editUser, setEditUser] = useState('')
+  const [editPass, setEditPass] = useState('')
 
   const overrides = useMemo(() => contentQuery.data ?? {}, [contentQuery.data])
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -323,6 +327,39 @@ export default function Admin() {
       flash('Administrador criado ✓')
     } catch (err) {
       flash(err instanceof Error ? err.message : 'Erro ao criar administrador.', false)
+    }
+  }
+
+  const startEditAdmin = (id: number, username: string) => {
+    setEditingId(id)
+    setEditUser(username)
+    setEditPass('')
+  }
+
+  const cancelEditAdmin = () => {
+    setEditingId(null)
+    setEditUser('')
+    setEditPass('')
+  }
+
+  const saveEditAdmin = async (id: number, currentUsername: string) => {
+    const nextUser = editUser.trim()
+    // Only send what actually changed; an unchanged name would be a pointless write.
+    const payload: { id: number; username?: string; password?: string } = { id }
+    if (nextUser && nextUser !== currentUsername) payload.username = nextUser
+    if (editPass) payload.password = editPass
+
+    if (payload.username === undefined && payload.password === undefined) {
+      cancelEditAdmin()
+      return
+    }
+    try {
+      await updateAdmin.mutateAsync(payload)
+      await utils.adminUsers.list.invalidate()
+      cancelEditAdmin()
+      flash('Administrador atualizado ✓')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Erro ao atualizar administrador.', false)
     }
   }
 
@@ -785,22 +822,67 @@ export default function Admin() {
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {adminUsersQuery.data?.map((a) => (
-              <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, border: `1px solid rgba(201,169,97,0.22)`, backgroundColor: 'rgba(22,16,9,0.6)', padding: '14px 20px', flexWrap: 'wrap' }}>
-                <div>
-                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: theme.cream, letterSpacing: '0.08em' }}>
-                    {a.username}
-                  </span>
-                  <span style={{ display: 'block', fontFamily: "'Playfair Display', serif", fontSize: 12, color: 'rgba(201,180,138,0.55)', marginTop: 4 }}>
-                    criado em {new Date(a.createdAt).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                <button
-                  onClick={() => deleteAdmin(a.id, a.username)}
-                  disabled={removeAdmin.isPending}
-                  style={{ ...ghostBtn, color: '#e08a8a', borderColor: 'rgba(224,138,138,0.45)', minWidth: 120 }}
-                >
-                  Remover
-                </button>
+              <div key={a.id} style={{ border: `1px solid rgba(201,169,97,0.22)`, backgroundColor: 'rgba(22,16,9,0.6)', padding: '14px 20px' }}>
+                {editingId === a.id ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <p style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.gold, margin: 0 }}>
+                      Editando {a.username}
+                    </p>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <input
+                        value={editUser}
+                        onChange={(e) => setEditUser(e.target.value)}
+                        placeholder="Usuário"
+                        autoComplete="off"
+                        style={{ ...inputStyle, flex: '1 1 200px', width: 'auto' }}
+                      />
+                      <input
+                        type="password"
+                        value={editPass}
+                        onChange={(e) => setEditPass(e.target.value)}
+                        placeholder="Deixe em branco para manter a atual"
+                        autoComplete="new-password"
+                        style={{ ...inputStyle, flex: '1 1 240px', width: 'auto' }}
+                      />
+                      <button
+                        onClick={() => saveEditAdmin(a.id, a.username)}
+                        disabled={updateAdmin.isPending}
+                        style={{ ...saveBtn, opacity: updateAdmin.isPending ? 0.6 : 1 }}
+                      >
+                        {updateAdmin.isPending ? 'Salvando…' : 'Salvar'}
+                      </button>
+                      <button onClick={cancelEditAdmin} disabled={updateAdmin.isPending} style={ghostBtn}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <div>
+                      <span style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: theme.cream, letterSpacing: '0.08em' }}>
+                        {a.username}
+                      </span>
+                      <span style={{ display: 'block', fontFamily: "'Playfair Display', serif", fontSize: 12, color: 'rgba(201,180,138,0.55)', marginTop: 4 }}>
+                        criado em {new Date(a.createdAt).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => startEditAdmin(a.id, a.username)}
+                        style={{ ...ghostBtn, minWidth: 120 }}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => deleteAdmin(a.id, a.username)}
+                        disabled={removeAdmin.isPending}
+                        style={{ ...ghostBtn, color: '#e08a8a', borderColor: 'rgba(224,138,138,0.45)', minWidth: 120 }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
