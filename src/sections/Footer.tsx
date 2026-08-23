@@ -144,26 +144,20 @@ export default function Footer() {
           marginTop: '34px',
         }}
       >
-        © {new Date().getFullYear()} Ahmad K. Taha · {t('footer.developedBy')}{' '}
+        © {new Date().getFullYear()} Ahmad K. Taha · {t('footer.rights')} · {t('footer.developedBy')}{' '}
         <a
           href={VYTETECH_URL}
           target="_blank"
           rel="noreferrer"
           style={{
-            color: 'rgba(212,175,55,0.7)',
+            color: theme.gold,
+            fontWeight: 700,
             textDecoration: 'none',
-            transition: 'color 0.25s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = theme.gold
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'rgba(212,175,55,0.7)'
+            letterSpacing: '0.14em',
           }}
         >
-          Vytetech
-        </a>{' '}
-        · {t('footer.rights')}
+          VyteTech
+        </a>
       </p>
 
       {/* House rules modal */}
