@@ -1,11 +1,13 @@
 import { useLang } from '../i18n'
 import { Particles, Sparkles, Ornament, theme, WHATSAPP_URL } from '../components/atoms'
 import { useState } from 'react'
+import { seoByLang } from '../seo'
 
 export default function Hero() {
-  const { t, overrides } = useLang()
+  const { t, lang, overrides } = useLang()
   const [h1, setH1] = useState(false)
   const [h2, setH2] = useState(false)
+  const seo = seoByLang[lang]
 
   return (
     <section
@@ -34,7 +36,9 @@ export default function Hero() {
       >
         <img
           src={overrides['img.heroLogo'] || '/images/ahmad/logo.png'}
-          alt="Xícara cósmica de borra de café"
+          alt={seo.imageAlt}
+          width={300}
+          height={300}
           style={{
             width: 'clamp(180px, 26vw, 300px)',
             height: 'auto',
@@ -56,8 +60,20 @@ export default function Hero() {
             textShadow: '0 4px 40px rgba(0,0,0,0.6)',
           }}
         >
-          Ahmad K. Taha
+          {seo.h1}
         </h1>
+
+        <p
+          style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: 'clamp(15px, 2vw, 24px)',
+            letterSpacing: '0.16em',
+            color: theme.gold,
+            margin: '0 0 8px',
+          }}
+        >
+          Ahmad K. Taha
+        </p>
 
         <p
           style={{

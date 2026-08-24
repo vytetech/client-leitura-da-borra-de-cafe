@@ -5,7 +5,7 @@ import { Eyebrow, Reveal, Sparkles, theme } from '../components/atoms'
 const defaultPhotos = Array.from({ length: 6 }, (_, i) => `/images/ahmad/ev${i + 1}.jpg`)
 
 export default function Events() {
-  const { t, overrides } = useLang()
+  const { t, lang, overrides } = useLang()
   const photos = defaultPhotos.map((d, i) => overrides[`events.photo.${i + 1}`] || d)
   const [open, setOpen] = useState<number | null>(null)
 
@@ -95,7 +95,7 @@ export default function Events() {
               >
                 <img
                   src={src}
-                  alt={`Leitura de borra de café em evento ${i + 1}`}
+                  alt={`${eventAlt[lang]} ${i + 1}`}
                   loading="lazy"
                   style={{
                     width: '100%',
@@ -184,7 +184,7 @@ export default function Events() {
         >
           <img
             src={photos[open]}
-            alt={`Leitura de borra de café em evento ${open + 1}`}
+            alt={`${eventAlt[lang]} ${open + 1}`}
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: 'min(92vw, 900px)',
@@ -250,4 +250,11 @@ export default function Events() {
       `}</style>
     </section>
   )
+}
+
+const eventAlt = {
+  pt: 'Leitura da borra de cafe realizada em evento',
+  en: 'Coffee grounds reading performed at an event',
+  es: 'Lectura de posos de cafe realizada en un evento',
+  ar: 'قراءة تفل القهوة في مناسبة',
 }

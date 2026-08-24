@@ -1,8 +1,9 @@
 import { useLang } from '../i18n'
 import { Eyebrow, Ornament, Reveal, theme } from '../components/atoms'
+import { seoByLang } from '../seo'
 
 export default function About() {
-  const { t, overrides } = useLang()
+  const { t, lang, overrides } = useLang()
 
   return (
     <section
@@ -53,7 +54,9 @@ export default function About() {
               />
               <img
                 src={overrides['img.about'] || '/images/ahmad/about.png'}
-                alt="Ahmad lendo os símbolos da borra de café"
+                alt={seoByLang[lang].imageAlt}
+                width={900}
+                height={900}
                 style={{
                   width: '100%',
                   display: 'block',

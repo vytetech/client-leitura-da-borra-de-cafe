@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+import { getLangFromPath, locales } from './seo'
 
 export type Lang = 'pt' | 'es' | 'en' | 'ar'
 
@@ -508,9 +510,14 @@ interface LangCtx {
 const Ctx = createContext<LangCtx | null>(null)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('pt')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const lang = getLangFromPath(location.pathname)
 
-  const setLang = (l: Lang) => setLangState(l)
+  const setLang = (l: Lang) => {
+    const nextPath = locales[l].path
+    if (location.pathname !== nextPath) navigate(nextPath, { replace: false })
+  }
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'

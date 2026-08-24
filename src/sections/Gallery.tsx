@@ -5,7 +5,7 @@ import { Eyebrow, Reveal, theme } from '../components/atoms'
 const defaultPhotos = Array.from({ length: 9 }, (_, i) => `/images/ahmad/g${i + 1}.jpg`)
 
 export default function Gallery() {
-  const { t, overrides } = useLang()
+  const { t, lang, overrides } = useLang()
   const photos = defaultPhotos.map((d, i) => overrides[`gallery.photo.${i + 1}`] || d)
   const [open, setOpen] = useState<number | null>(null)
 
@@ -94,7 +94,7 @@ export default function Gallery() {
               >
                 <img
                   src={src}
-                  alt={`Leitura de borra de café ${i + 1}`}
+                  alt={`${galleryAlt[lang]} ${i + 1}`}
                   loading="lazy"
                   style={{
                     width: '100%',
@@ -156,7 +156,7 @@ export default function Gallery() {
         >
           <img
             src={photos[open]}
-            alt={`Leitura de borra de café ${open + 1}`}
+            alt={`${galleryAlt[lang]} ${open + 1}`}
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: 'min(92vw, 900px)',
@@ -222,4 +222,11 @@ export default function Gallery() {
       `}</style>
     </section>
   )
+}
+
+const galleryAlt = {
+  pt: 'Xicara real com simbolos da borra de cafe',
+  en: 'Real cup with coffee grounds symbols',
+  es: 'Taza real con simbolos de los posos del cafe',
+  ar: 'فنجان حقيقي مع رموز تفل القهوة',
 }
