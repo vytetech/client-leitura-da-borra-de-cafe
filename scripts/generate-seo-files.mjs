@@ -79,12 +79,8 @@ function extractViteHeadAssets(html) {
 }
 
 function renderRoot(lang) {
-  const seo = seoByLang[lang]
-  const sections = seo.sections
-    .map((section) => `<section><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`)
-    .join('')
-  const dir = locales[lang].dir
-  return `<div id="root"><main lang="${locales[lang].hreflang}" dir="${dir}"><h1>${escapeHtml(seo.h1)}</h1><p>${escapeHtml(seo.lead)}</p>${sections}</main></div>`
+  const locale = locales[lang]
+  return `<div id="root" lang="${locale.hreflang}" dir="${locale.dir}"><div aria-hidden="true" style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 20%, rgba(177,129,54,.2), transparent 34%),linear-gradient(180deg,#160f08 0%,#0c0705 100%);color:#f7ead7;font-family:'Cinzel',serif;"><div style="display:grid;gap:18px;place-items:center;padding:32px;text-align:center;"><div style="width:44px;height:44px;border:1px solid rgba(212,175,55,.55);border-radius:999px;box-shadow:0 0 32px rgba(212,175,55,.24);"></div><div style="font-size:clamp(18px,4vw,28px);letter-spacing:.08em;text-transform:uppercase;">Ahmad K. Taha</div><div style="width:120px;height:2px;background:linear-gradient(90deg,transparent,#d4af37,transparent);"></div></div></div></div>`
 }
 
 function renderHtml(lang) {
