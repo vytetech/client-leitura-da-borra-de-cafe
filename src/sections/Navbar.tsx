@@ -19,33 +19,17 @@ const LANG_OPTIONS: { id: Lang; flag: string; label: string }[] = [
   { id: 'en', flag: '🇨🇦', label: 'English' },
 ]
 
-function GlobeIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="9.2" />
-      <ellipse cx="12" cy="12" rx="4.2" ry="9.2" />
-      <line x1="2.8" y1="12" x2="21.2" y2="12" />
-      <path d="M4.2 6.2 C 7.5 8.4, 16.5 8.4, 19.8 6.2" />
-      <path d="M4.2 17.8 C 7.5 15.6, 16.5 15.6, 19.8 17.8" />
-    </svg>
-  )
-}
-
 export default function Navbar() {
   const { lang, setLang, t, overrides } = useLang()
   const [scrolled, setScrolled] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
-  const [langOpen, setLangOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
-    const closeMenus = () => { setLangOpen(false) }
     window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('click', closeMenus)
     return () => {
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('click', closeMenus)
     }
   }, [])
 
@@ -163,79 +147,12 @@ export default function Navbar() {
             {t('nav.book')}
           </button>
 
-          {/* Language picker — desktop */}
-          <div style={{ position: 'relative', marginLeft: '14px' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }}
-              aria-label="Language / Idioma / اللغة"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: langOpen ? 'rgba(212,175,55,0.14)' : 'transparent',
-                border: '1px solid rgba(201,169,97,0.4)',
-                color: theme.gold,
-                cursor: 'pointer',
-                padding: '8px 12px',
-                transition: 'background 0.25s ease',
-              }}
-            >
-              <GlobeIcon />
-              <span style={{ fontSize: '13px', lineHeight: 1 }}>{LANG_OPTIONS.find((o) => o.id === lang)?.flag}</span>
-            </button>
-            {langOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  insetInlineEnd: 0,
-                  minWidth: '180px',
-                  backgroundColor: 'rgba(12,7,5,0.97)',
-                  border: `1px solid ${theme.goldSoft}`,
-                  boxShadow: '0 18px 50px rgba(0,0,0,0.6)',
-                  zIndex: 200,
-                }}
-              >
-                {LANG_OPTIONS.map((o) => (
-                  <button
-                    key={o.id}
-                    onClick={() => { setLang(o.id); setLangOpen(false) }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      width: '100%',
-                      background: lang === o.id ? 'rgba(212,175,55,0.16)' : 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '12px 16px',
-                      textAlign: 'start',
-                      transition: 'background 0.2s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '17px', lineHeight: 1 }}>{o.flag}</span>
-                    <span
-                      style={{
-                        fontFamily: "'Cinzel', serif",
-                        fontSize: '12px',
-                        letterSpacing: '0.08em',
-                        color: lang === o.id ? theme.gold : theme.cream,
-                      }}
-                    >
-                      {o.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </nav>
 
         {/* ---------- mobile controls ---------- */}
         <div className="mobile-controls" style={{ display: 'none', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); setLangOpen(false) }}
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o) }}
             aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
             style={{
               background: 'transparent',
