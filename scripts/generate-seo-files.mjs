@@ -5,6 +5,7 @@ import { SITE_URL, canonical, jsonLd, locales, seoByLang, supportedLangs } from 
 const dist = path.resolve('dist/public')
 const indexPath = path.join(dist, 'index.html')
 const template = fs.readFileSync(indexPath, 'utf8')
+const viteHeadAssets = extractViteHeadAssets(template)
 
 function escapeHtml(value) {
   return String(value)
@@ -56,7 +57,25 @@ ${ogAlternates}
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap"
       rel="stylesheet"
-    />`
+    />
+${viteHeadAssets}`
+}
+
+function extractViteHeadAssets(html) {
+  const headMatch = html.match(/<head>([\s\S]*?)<\/head>/)
+  if (!headMatch) {
+    throw new Error('Could not find <head> in Vite build output.')
+  }
+
+  const tags = headMatch[1].match(/<(?:link|script)\b[\s\S]*?>(?:<\/script>)?/g) ?? []
+  const assetTags = tags.filter((tag) => tag.includes('/assets/') || tag.includes('type="module"'))
+
+  const hasModuleScript = assetTags.some((tag) => /<script\b/i.test(tag) && tag.includes('type="module"'))
+  if (!hasModuleScript) {
+    throw new Error('Could not find Vite module script in build output.')
+  }
+
+  return assetTags.join('\n')
 }
 
 function renderRoot(lang) {

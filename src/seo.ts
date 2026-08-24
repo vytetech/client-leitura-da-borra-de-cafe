@@ -1,6 +1,6 @@
 export type Lang = 'pt' | 'es' | 'en' | 'ar'
 
-export const SITE_URL = 'https://leitura-borra-cafe.onrender.com'
+export const SITE_URL = 'https://leituradaborradecafe.com'
 export const SITE_NAME = 'Ahmad K. Taha'
 export const BRAND_NAME = 'A Leitura da Borra de Cafe'
 export const DEFAULT_IMAGE = '/images/ahmad/logo.png'

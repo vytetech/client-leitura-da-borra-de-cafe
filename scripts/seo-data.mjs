@@ -1,4 +1,4 @@
-export const SITE_URL = (process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://leitura-borra-cafe.onrender.com').replace(/\/$/, '')
+export const SITE_URL = (process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://leituradaborradecafe.com').replace(/\/$/, '')
 export const DEFAULT_IMAGE = '/images/ahmad/logo.png'
 export const SITE_NAME = 'Ahmad K. Taha'
 export const BRAND_NAME = 'A Leitura da Borra de Cafe'
