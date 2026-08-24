@@ -12,24 +12,28 @@ const links: { id: string; key: 'nav.about' | 'nav.how' | 'nav.gallery' | 'nav.s
   { id: 'depoimentos', key: 'nav.testimonials' },
 ]
 
-const LANG_OPTIONS: { id: Lang; flag: string; label: string }[] = [
-  { id: 'pt', flag: '🇧🇷', label: 'Português' },
-  { id: 'ar', flag: '🇵🇸', label: 'العربية' },
-  { id: 'es', flag: '🇪🇸', label: 'Español' },
-  { id: 'en', flag: '🇨🇦', label: 'English' },
+const LANG_OPTIONS: { id: Lang; label: string }[] = [
+  { id: 'pt', label: 'Português' },
+  { id: 'en', label: 'English' },
+  { id: 'es', label: 'Español' },
+  { id: 'ar', label: 'العربية' },
 ]
 
 export default function Navbar() {
   const { lang, setLang, t, overrides } = useLang()
   const [scrolled, setScrolled] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
+  const [langOpen, setLangOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
+    const closeLanguage = () => setLangOpen(false)
     window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('click', closeLanguage)
     return () => {
       window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('click', closeLanguage)
     }
   }, [])
 
@@ -41,7 +45,14 @@ export default function Navbar() {
 
   const go = (id: string) => {
     setMenuOpen(false)
+    setLangOpen(false)
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }))
+  }
+
+  const selectLanguage = (nextLang: Lang) => {
+    setLang(nextLang)
+    setLangOpen(false)
+    setMenuOpen(false)
   }
 
   return (
@@ -147,12 +158,75 @@ export default function Navbar() {
             {t('nav.book')}
           </button>
 
+          <div style={{ position: 'relative', marginLeft: '10px' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setLangOpen((open) => !open) }}
+              aria-label="Selecionar idioma"
+              aria-expanded={langOpen}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '7px',
+                cursor: 'pointer',
+                fontFamily: "'Cinzel', serif",
+                fontSize: '11px',
+                letterSpacing: '0.16em',
+                color: theme.gold,
+                background: langOpen ? 'rgba(212,175,55,0.14)' : 'rgba(12,7,5,0.18)',
+                border: '1px solid rgba(201,169,97,0.42)',
+                padding: '10px 12px',
+                transition: 'all 0.25s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {LANG_OPTIONS.find((o) => o.id === lang)?.label}
+              <span aria-hidden="true" style={{ fontSize: '10px', transform: langOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>▾</span>
+            </button>
+            {langOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  minWidth: '170px',
+                  backgroundColor: 'rgba(12,7,5,0.98)',
+                  border: `1px solid ${theme.goldSoft}`,
+                  boxShadow: '0 18px 50px rgba(0,0,0,0.55)',
+                  zIndex: 200,
+                }}
+              >
+                {LANG_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => selectLanguage(option.id)}
+                    style={{
+                      display: 'block',
+                      alignItems: 'center',
+                      width: '100%',
+                      background: lang === option.id ? 'rgba(212,175,55,0.16)' : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '12px 14px',
+                      color: lang === option.id ? theme.gold : theme.cream,
+                      fontFamily: "'Cinzel', serif",
+                      fontSize: '12px',
+                      letterSpacing: '0.06em',
+                      textAlign: 'start',
+                    }}
+                  >
+                    <span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* ---------- mobile controls ---------- */}
         <div className="mobile-controls" style={{ display: 'none', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o) }}
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); setLangOpen(false) }}
             aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
             style={{
               background: 'transparent',
@@ -273,12 +347,15 @@ export default function Navbar() {
             {t('nav.book')}
           </button>
 
-          {/* language flags row */}
+          {/* language selector */}
           <div
             style={{
-              display: 'flex',
-              gap: '14px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: '10px',
               marginTop: '34px',
+              width: '100%',
+              maxWidth: '380px',
               opacity: menuOpen ? 1 : 0,
               transform: menuOpen ? 'translateY(0)' : 'translateY(14px)',
               transition: `opacity 0.4s ease 0.58s, transform 0.4s ease 0.58s`,
@@ -287,15 +364,17 @@ export default function Navbar() {
             {LANG_OPTIONS.map((o) => (
               <button
                 key={o.id}
-                onClick={() => setLang(o.id)}
+                onClick={() => selectLanguage(o.id)}
                 aria-label={o.label}
                 style={{
                   background: lang === o.id ? 'rgba(212,175,55,0.16)' : 'transparent',
                   border: `1px solid ${lang === o.id ? theme.gold : 'rgba(201,169,97,0.35)'}`,
-                  borderRadius: '50%',
-                  width: '52px',
-                  height: '52px',
-                  fontSize: '22px',
+                  color: lang === o.id ? theme.gold : theme.cream,
+                  minHeight: '46px',
+                  padding: '10px 12px',
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: '12px',
+                  letterSpacing: '0.08em',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -304,7 +383,7 @@ export default function Navbar() {
                   lineHeight: 1,
                 }}
               >
-                {o.flag}
+                <span>{o.label}</span>
               </button>
             ))}
           </div>
