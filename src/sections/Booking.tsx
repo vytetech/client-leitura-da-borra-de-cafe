@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLang, type TKey } from '../i18n'
 import { Eyebrow, Particles, Sparkles, Reveal, theme, WHATSAPP_URL } from '../components/atoms'
+import { trpc } from '@/providers/trpc'
 
 const serviceKeys: TKey[] = ['services.s1t', 'services.s2t', 'services.s3t']
 const timeKeys: TKey[] = ['booking.morning', 'booking.afternoon', 'booking.evening']
@@ -14,21 +15,38 @@ export default function Booking() {
     service: 0,
     date: '',
     time: 0,
+    coupon: '',
     notes: '',
   })
   const [error, setError] = useState(false)
+  const [couponMessage, setCouponMessage] = useState<{ text: string; ok: boolean } | null>(null)
   const [hover, setHover] = useState(false)
+  const validateCoupon = trpc.coupons.validate.useMutation()
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || !form.whatsapp.trim()) {
       setError(true)
       return
     }
     setError(false)
+    setCouponMessage(null)
+
+    let appliedCoupon = ''
+    if (form.coupon.trim()) {
+      try {
+        const result = await validateCoupon.mutateAsync({ code: form.coupon.trim() })
+        setCouponMessage({ text: result.message, ok: result.valid })
+        if (!result.valid) return
+        appliedCoupon = `${result.code} (${result.discountPercent}%)`
+      } catch {
+        setCouponMessage({ text: 'Não foi possível validar o cupom agora.', ok: false })
+        return
+      }
+    }
 
     const L = {
       pt: { h: 'Novo pedido de leitura', n: 'Nome', w: 'WhatsApp', em: 'E-mail', s: 'Serviço', d: 'Data', tm: 'Horário', o: 'Observações' },
@@ -46,6 +64,7 @@ export default function Booking() {
       `*${L.s}:* ${t(serviceKeys[form.service])}`,
       form.date ? `*${L.d}:* ${form.date}` : '',
       `*${L.tm}:* ${t(timeKeys[form.time])}`,
+      appliedCoupon ? `*Cupom:* ${appliedCoupon}` : '',
       form.notes ? `*${L.o}:* ${form.notes}` : '',
     ].filter((l) => l !== '')
 
@@ -135,6 +154,32 @@ export default function Booking() {
               options={serviceKeys.map((k) => t(k))}
             />
 
+            <label style={{ display: 'block' }}>
+              <span style={labelStyle}>Cupom</span>
+              <input
+                value={form.coupon}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, coupon: e.target.value.toUpperCase() }))
+                  setCouponMessage(null)
+                }}
+                placeholder="BORRA10"
+                style={inputStyle}
+                onFocus={(e) => (e.currentTarget.style.borderBottomColor = theme.gold)}
+                onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'rgba(201,169,97,0.4)')}
+              />
+              {couponMessage && (
+                <span style={{
+                  display: 'block',
+                  color: couponMessage.ok ? '#9fe3b4' : '#e8a08e',
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 13,
+                  marginTop: 8,
+                }}>
+                  {couponMessage.text}
+                </span>
+              )}
+            </label>
+
             <div className="booking-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
               <Field label={t('booking.date')} value={form.date} onChange={set('date')} type="date" />
               <SelectField
@@ -160,6 +205,7 @@ export default function Booking() {
 
             <button
               type="submit"
+              disabled={validateCoupon.isPending}
               onMouseEnter={() => setHover(true)}
               onMouseLeave={() => setHover(false)}
               style={{
@@ -172,12 +218,13 @@ export default function Booking() {
                 backgroundColor: hover ? theme.gold : 'transparent',
                 border: `1px solid ${theme.gold}`,
                 padding: '18px 24px',
-                cursor: 'pointer',
+                cursor: validateCoupon.isPending ? 'wait' : 'pointer',
+                opacity: validateCoupon.isPending ? 0.65 : 1,
                 transition: 'all 0.3s ease',
                 boxShadow: hover ? '0 0 36px rgba(212,175,55,0.3)' : 'none',
               }}
             >
-              {t('booking.submit')} ✆
+              {validateCoupon.isPending ? 'Validando…' : t('booking.submit')} ✆
             </button>
           </form>
         </Reveal>

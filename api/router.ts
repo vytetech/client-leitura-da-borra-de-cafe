@@ -3,6 +3,7 @@ import { readingRouter } from "./reading-router";
 import { contentRouter } from "./content-router";
 import { uploadRouter } from "./upload-router";
 import { adminUsersRouter } from "./admin-users-router";
+import { couponsRouter } from "./coupons-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -12,6 +13,7 @@ export const appRouter = createRouter({
   content: contentRouter,
   upload: uploadRouter,
   adminUsers: adminUsersRouter,
+  coupons: couponsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -95,6 +95,29 @@ const SITE_SECTIONS = [
 ]
 
 const PREVIEW_STYLE_ID = 'admin-style-preview'
+type AdminTab = 'textos' | 'precos' | 'cupons' | 'imagens' | 'estilo' | 'secoes' | 'usuarios'
+type CouponForm = {
+  code: string
+  discountPercent: string
+  startDate: string
+  endDate: string
+  isActive: boolean
+}
+
+const emptyCouponForm: CouponForm = {
+  code: '',
+  discountPercent: '',
+  startDate: '',
+  endDate: '',
+  isActive: true,
+}
+
+const couponStatusLabel = {
+  scheduled: 'Agendado',
+  active: 'Ativo',
+  expired: 'Expirado',
+  inactive: 'Inativo',
+} as const
 
 export default function Admin() {
   const { user, isAuthenticated, isLoading, logout } = useAuth()
@@ -127,8 +150,12 @@ export default function Admin() {
   const createAdmin = trpc.adminUsers.create.useMutation()
   const removeAdmin = trpc.adminUsers.remove.useMutation()
   const updateAdmin = trpc.adminUsers.update.useMutation()
+  const couponsQuery = trpc.coupons.list.useQuery(undefined, { enabled: isAdmin })
+  const createCoupon = trpc.coupons.create.useMutation()
+  const updateCoupon = trpc.coupons.update.useMutation()
+  const removeCoupon = trpc.coupons.remove.useMutation()
 
-  const [tab, setTab] = useState<'textos' | 'precos' | 'imagens' | 'estilo' | 'secoes' | 'usuarios'>('textos')
+  const [tab, setTab] = useState<AdminTab>('textos')
   const [lang, setLang] = useState<Lang>('pt')
   const [search, setSearch] = useState('')
   const [drafts, setDrafts] = useState<Record<string, string>>({})
@@ -140,6 +167,8 @@ export default function Admin() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editUser, setEditUser] = useState('')
   const [editPass, setEditPass] = useState('')
+  const [couponForm, setCouponForm] = useState<CouponForm>(emptyCouponForm)
+  const [editingCouponId, setEditingCouponId] = useState<number | null>(null)
 
   const overrides = useMemo(() => contentQuery.data ?? {}, [contentQuery.data])
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -374,6 +403,83 @@ export default function Admin() {
     }
   }
 
+  const submitCoupon = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const discountPercent = Number(couponForm.discountPercent)
+
+    if (!couponForm.code.trim()) {
+      flash('Código obrigatório.', false)
+      return
+    }
+    if (!couponForm.discountPercent || Number.isNaN(discountPercent)) {
+      flash('Percentual de desconto obrigatório.', false)
+      return
+    }
+    if (!couponForm.startDate) {
+      flash('Data inicial obrigatória.', false)
+      return
+    }
+    if (!couponForm.endDate) {
+      flash('Data final obrigatória.', false)
+      return
+    }
+    if (couponForm.endDate < couponForm.startDate) {
+      flash('A data de término deve ser igual ou posterior à data de início.', false)
+      return
+    }
+
+    const payload = {
+      code: couponForm.code,
+      discountPercent,
+      startDate: couponForm.startDate,
+      endDate: couponForm.endDate,
+      isActive: couponForm.isActive,
+    }
+
+    try {
+      if (editingCouponId) {
+        await updateCoupon.mutateAsync({ id: editingCouponId, ...payload })
+        flash('Cupom atualizado ✓')
+      } else {
+        await createCoupon.mutateAsync(payload)
+        flash('Cupom criado ✓')
+      }
+      setCouponForm(emptyCouponForm)
+      setEditingCouponId(null)
+      await utils.coupons.list.invalidate()
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Erro ao salvar cupom.', false)
+    }
+  }
+
+  const startEditCoupon = (coupon: NonNullable<typeof couponsQuery.data>[number]) => {
+    setEditingCouponId(coupon.id)
+    setCouponForm({
+      code: coupon.code,
+      discountPercent: String(coupon.discountPercent),
+      startDate: coupon.startDate,
+      endDate: coupon.endDate,
+      isActive: coupon.isActive,
+    })
+  }
+
+  const cancelCouponEdit = () => {
+    setEditingCouponId(null)
+    setCouponForm(emptyCouponForm)
+  }
+
+  const deleteCoupon = async (id: number, code: string) => {
+    if (!window.confirm(`Remover o cupom "${code}"?`)) return
+    try {
+      await removeCoupon.mutateAsync({ id })
+      await utils.coupons.list.invalidate()
+      if (editingCouponId === id) cancelCouponEdit()
+      flash('Cupom removido ✓')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Erro ao remover cupom.', false)
+    }
+  }
+
   const styleDirty = [...COLOR_FIELDS.map((f) => f.key), 'style.font.family', 'style.font.base', 'style.font.h1']
     .some((k) => drafts[k] !== undefined)
 
@@ -418,7 +524,7 @@ export default function Admin() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, margin: '34px 0 26px', flexWrap: 'wrap' }}>
-        {([['textos', '✏️ Textos'], ['precos', '💰 Preços das leituras'], ['imagens', '🖼️ Fotos e vídeos'], ['estilo', '🎨 Estilo'], ['secoes', '🧩 Seções'], ['usuarios', '👤 Usuários']] as const).map(([id, label]) => (
+        {([['textos', '✏️ Textos'], ['precos', '💰 Preços das leituras'], ['cupons', '🏷️ Cupons'], ['imagens', '🖼️ Fotos e vídeos'], ['estilo', '🎨 Estilo'], ['secoes', '🧩 Seções'], ['usuarios', '👤 Usuários']] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -566,6 +672,122 @@ export default function Admin() {
                 </div>
               )
             })}
+          </div>
+        </>
+      )}
+
+      {tab === 'cupons' && (
+        <>
+          <form onSubmit={submitCoupon} style={{ border: `1px solid rgba(201,169,97,0.22)`, backgroundColor: 'rgba(22,16,9,0.6)', padding: '22px 24px', marginBottom: 30 }}>
+            <p style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.gold, margin: '0 0 18px' }}>
+              {editingCouponId ? 'Editar cupom' : 'Novo cupom'}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 14, alignItems: 'end' }}>
+              <label>
+                <span style={adminLabelStyle}>Código</span>
+                <input
+                  value={couponForm.code}
+                  onChange={(e) => setCouponForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
+                  placeholder="BORRA10"
+                  style={{ ...inputStyle, width: '100%' }}
+                />
+              </label>
+              <label>
+                <span style={adminLabelStyle}>Desconto %</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={couponForm.discountPercent}
+                  onChange={(e) => setCouponForm((f) => ({ ...f, discountPercent: e.target.value }))}
+                  placeholder="10"
+                  style={{ ...inputStyle, width: '100%' }}
+                />
+              </label>
+              <label>
+                <span style={adminLabelStyle}>Começa em</span>
+                <input
+                  type="date"
+                  value={couponForm.startDate}
+                  onChange={(e) => setCouponForm((f) => ({ ...f, startDate: e.target.value }))}
+                  style={{ ...inputStyle, width: '100%', colorScheme: 'dark' }}
+                />
+              </label>
+              <label>
+                <span style={adminLabelStyle}>Termina em</span>
+                <input
+                  type="date"
+                  value={couponForm.endDate}
+                  onChange={(e) => setCouponForm((f) => ({ ...f, endDate: e.target.value }))}
+                  style={{ ...inputStyle, width: '100%', colorScheme: 'dark' }}
+                />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 42 }}>
+                <input
+                  type="checkbox"
+                  checked={couponForm.isActive}
+                  onChange={(e) => setCouponForm((f) => ({ ...f, isActive: e.target.checked }))}
+                />
+                <span style={{ ...adminLabelStyle, margin: 0 }}>Ativo</span>
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+              <button type="submit" disabled={createCoupon.isPending || updateCoupon.isPending} style={{ ...saveBtn, opacity: createCoupon.isPending || updateCoupon.isPending ? 0.6 : 1 }}>
+                {editingCouponId ? 'Salvar cupom' : 'Criar cupom'}
+              </button>
+              {editingCouponId && (
+                <button type="button" onClick={cancelCouponEdit} style={ghostBtn}>
+                  Cancelar edição
+                </button>
+              )}
+            </div>
+          </form>
+
+          {couponsQuery.isLoading && (
+            <p style={{ color: theme.beige, fontFamily: "'Playfair Display', serif" }}>Carregando…</p>
+          )}
+          {couponsQuery.data && couponsQuery.data.length === 0 && (
+            <p style={{ color: 'rgba(201,180,138,0.6)', fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>
+              Nenhum cupom cadastrado.
+            </p>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {couponsQuery.data?.map((coupon) => (
+              <div key={coupon.id} style={{ border: `1px solid rgba(201,169,97,0.22)`, backgroundColor: 'rgba(22,16,9,0.6)', padding: '14px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <div>
+                    <span style={{ fontFamily: "'Cinzel', serif", fontSize: 15, color: theme.cream, letterSpacing: '0.08em' }}>
+                      {coupon.code}
+                    </span>
+                    <span style={{ display: 'block', fontFamily: "'Playfair Display', serif", fontSize: 13, color: theme.beige, marginTop: 4 }}>
+                      {coupon.discountPercent}% · {new Date(`${coupon.startDate}T00:00:00`).toLocaleDateString('pt-BR')} → {new Date(`${coupon.endDate}T00:00:00`).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{
+                      fontFamily: "'Cinzel', serif",
+                      fontSize: 11,
+                      letterSpacing: '0.14em',
+                      color: coupon.status === 'active' ? '#9fe3b4' : coupon.status === 'expired' || coupon.status === 'inactive' ? '#e08a8a' : theme.gold,
+                      border: '1px solid rgba(201,169,97,0.35)',
+                      padding: '8px 12px',
+                    }}>
+                      {couponStatusLabel[coupon.status]}
+                    </span>
+                    <button onClick={() => startEditCoupon(coupon)} style={{ ...ghostBtn, minWidth: 110 }}>
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => deleteCoupon(coupon.id, coupon.code)}
+                      disabled={removeCoupon.isPending}
+                      style={{ ...ghostBtn, color: '#e08a8a', borderColor: 'rgba(224,138,138,0.45)', minWidth: 110 }}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}
@@ -964,6 +1186,15 @@ const inputStyle: React.CSSProperties = {
   padding: '10px 14px',
   outline: 'none',
   boxSizing: 'border-box',
+}
+const adminLabelStyle: React.CSSProperties = {
+  display: 'block',
+  color: theme.goldSoft,
+  fontFamily: "'Cinzel', serif",
+  fontSize: 11,
+  letterSpacing: '0.16em',
+  textTransform: 'uppercase',
+  marginBottom: 6,
 }
 const tabBtn: React.CSSProperties = {
   border: `1px solid ${theme.gold}`,
