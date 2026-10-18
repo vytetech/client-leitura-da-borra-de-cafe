@@ -1,4 +1,32 @@
-# A Leitura da Borra de Café — Ahmad K. Taha
+<!-- Apresentação pública padronizada pela VyteTech; documentação técnica original mantida abaixo. -->
+
+<div align="center">
+
+# Leitura da Borra de Café — Ahmad K. Taha
+
+**Projeto desenvolvido pela [VyteTech](https://vytetech.com)** · Engenharia de software e soluções digitais
+
+[Acessar site](https://www.leituradaborradecafe.com) · [Portfólio VyteTech](https://github.com/vytetech/VyteTech/blob/main/docs/PORTFOLIO.md) · [Contato](mailto:contato@vytetech.com)
+
+</div>
+
+> **Visão geral:** Experiência web multilíngue com painel editorial e fluxo de agendamentos.
+
+### Entregas e funcionalidades
+
+- Landing page e conteúdo administrável
+- Suporte a português, inglês, espanhol e árabe (RTL)
+- Agendamentos e gerenciamento administrativo
+
+**Tecnologias principais:** React, TypeScript, Vite, Hono, tRPC, PostgreSQL e Render.
+
+**Direitos e uso:** código publicado com autorização do cliente. A disponibilidade pública não representa concessão automática de licença para reutilização ou redistribuição; aplicam-se os direitos e acordos pertinentes.
+
+Para divulgação responsável de questões de segurança, consulte [SECURITY.md](SECURITY.md).
+
+---
+
+## Documentação técnica e operação
 
 Site institucional e sistema de agendamento de **Ahmad K. Taha**, leitor de borra de café
 (cafeomancia / tasseografia árabe) em Ilhabela, SP.
@@ -180,3 +208,4 @@ Para o deploy no Render, veja [docs/DEPLOY.md](docs/DEPLOY.md).
 ## Licença e propriedade
 
 Projeto proprietário, desenvolvido pela **VyteTech** para Ahmad K. Taha.
+
