@@ -26,10 +26,7 @@ Para divulgação responsável de questões de segurança, consulte [SECURITY.md
 
 ---
 
-<details>
-<summary><strong>Documentação técnica original do projeto (abrir)</strong></summary>
-
-# A Leitura da Borra de Café — Ahmad K. Taha
+## Documentação técnica e operação
 
 Site institucional e sistema de agendamento de **Ahmad K. Taha**, leitor de borra de café
 (cafeomancia / tasseografia árabe) em Ilhabela, SP.
@@ -212,5 +209,3 @@ Para o deploy no Render, veja [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Projeto proprietário, desenvolvido pela **VyteTech** para Ahmad K. Taha.
 
-
-</details>
