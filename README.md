@@ -209,3 +209,12 @@ Para o deploy no Render, veja [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Projeto proprietário, desenvolvido pela **VyteTech** para Ahmad K. Taha.
 
+
+## Governança e documentação
+
+- [Governança documental](docs/GOVERNANCE.md)
+- [Visão de sistema e fluxos](docs/SYSTEM_OVERVIEW_AND_FLOWS.md)
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Implantação](docs/DEPLOY.md)
+
+Os documentos públicos são referências técnicas e não autorizam divulgação de credenciais, registros de usuários, contratos ou informações confidenciais. A manutenção de informações sensíveis pertence aos sistemas restritos da empresa.
